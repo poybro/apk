@@ -4,7 +4,8 @@ on: [push]
 
 jobs:
   build-android:
-    runs-on: ubuntu-latest
+    # [SỬA LỖI QUAN TRỌNG NHẤT] Sử dụng một phiên bản Ubuntu ổn định và đã được kiểm chứng
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout code
@@ -21,7 +22,6 @@ jobs:
         with:
           python-version: '3.9'
 
-      # [SỬA LỖI] Đơn giản hóa lại việc cài đặt, chỉ giữ lại những thứ thiết yếu nhất
       - name: Install system dependencies
         run: |
           sudo dpkg --add-architecture i386
@@ -53,16 +53,3 @@ jobs:
         with:
           name: sok-wallet-apk
           path: bin/*.apk
-```**Tại sao chúng ta xóa các bước SDK?**
-Bằng cách chỉ định `p4a.branch = develop`, chúng ta đang tin tưởng vào phiên bản `python-for-android` này để nó tự xử lý việc tải và thiết lập SDK/NDK một cách chính xác. Đây là cách làm "chuẩn" của Buildozer. Các bước tải SDK thủ công trước đây chỉ là để cố gắng vá các lỗi của phiên bản mặc định.
-
-### Bước cuối cùng
-
-1.  **Lưu lại (Commit)** cả hai file `buildozer.spec` và `.github/workflows/build.yml` đã được cập nhật.
-2.  Một quy trình Actions mới sẽ được khởi chạy.
-
-Lần này, chúng ta đang đi theo một con đường hoàn toàn khác:
-*   Sử dụng các phiên bản thư viện đã được kiểm chứng.
-*   Sử dụng một phiên bản `python-for-android` mạnh mẽ và đã được sửa lỗi hơn.
-
-Tôi thực sự tin rằng việc thay đổi chiến lược này sẽ phá vỡ vòng lặp lỗi và đưa chúng ta đến thành công.
