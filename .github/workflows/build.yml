@@ -34,6 +34,7 @@ jobs:
 
       - name: Download Android SDK and accept licenses
         run: |
+          # Dùng ANDROID_HOME để tương thích tốt hơn
           export ANDROID_HOME=$HOME/android-sdk
           mkdir -p $ANDROID_HOME/cmdline-tools
           wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
@@ -41,15 +42,11 @@ jobs:
           mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
           yes | sdkmanager --licenses
-          sdkmanager "platforms;android-31" "build-tools;34.0.0" "platform-tools"
+          # Cài đặt các công cụ cần thiết vào chính thư mục này
+          sdkmanager --sdk_root=${ANDROID_HOME} "platforms;android-31" "build-tools;34.0.0" "platform-tools"
 
-      # [SỬA LỖI QUAN TRỌNG] THÊM BƯỚC MỚI ĐỂ TẠO LIÊN KẾT TƯỢNG TRƯNG
-      - name: Create symlink for Buildozer compatibility
-        run: |
-          # Tạo thư mục cha nếu nó chưa tồn tại
-          mkdir -p /home/runner/.buildozer/android/platform/android-sdk/
-          # Tạo liên kết tượng trưng từ vị trí cài đặt đến vị trí Buildozer mong đợi
-          ln -s $HOME/android-sdk/build-tools /home/runner/.buildozer/android/platform/android-sdk/build-tools
+      # [SỬA LỖI] Bước symlink đã được xóa vì không cần thiết nữa.
+      # Buildozer sẽ đọc đường dẫn từ buildozer.spec.
 
       - name: Build with Buildozer
         run: |
