@@ -21,49 +21,28 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install system dependencies including build tools
+      # [SỬA LỖI] Đơn giản hóa lại việc cài đặt, chỉ giữ lại những thứ thiết yếu nhất
+      - name: Install system dependencies
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          # [SỬA LỖI QUAN TRỌNG] Thêm autoconf, automake, và libtool
           sudo apt-get install -y \
             git \
             zip \
             unzip \
             build-essential \
             autoconf \
-            automake \
             libtool \
             pkg-config \
             libc6:i386 \
             libncurses6:i386 \
             libstdc++6:i386 \
-            zlib1g:i386 \
-            libssl-dev \
-            libjpeg-dev
+            zlib1g:i386
 
-      - name: Install Buildozer and Python dependencies
+      - name: Install Buildozer
         run: |
           python -m pip install --upgrade pip
           pip install buildozer cython==0.29.34
-
-      # Các bước Download Android SDK và Buildozer giữ nguyên từ phiên bản trước
-
-      - name: Download Android SDK, accept licenses, and create compatibility symlinks
-        run: |
-          export ANDROID_HOME=$HOME/android-sdk
-          mkdir -p $ANDROID_HOME/cmdline-tools
-          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
-          unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools/
-          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-          
-          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
-          yes | sdkmanager --licenses
-          sdkmanager --sdk_root=${ANDROID_HOME} "platforms;android-31" "build-tools;34.0.0" "platform-tools"
-          
-          mkdir -p $ANDROID_HOME/tools/bin
-          ln -s $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager $ANDROID_HOME/tools/bin/sdkmanager
-          ln -s $ANDROID_HOME/cmdline-tools/latest/bin/avdmanager $ANDROID_HOME/tools/bin/avdmanager
 
       - name: Build with Buildozer
         run: |
@@ -74,3 +53,16 @@ jobs:
         with:
           name: sok-wallet-apk
           path: bin/*.apk
+```**Tại sao chúng ta xóa các bước SDK?**
+Bằng cách chỉ định `p4a.branch = develop`, chúng ta đang tin tưởng vào phiên bản `python-for-android` này để nó tự xử lý việc tải và thiết lập SDK/NDK một cách chính xác. Đây là cách làm "chuẩn" của Buildozer. Các bước tải SDK thủ công trước đây chỉ là để cố gắng vá các lỗi của phiên bản mặc định.
+
+### Bước cuối cùng
+
+1.  **Lưu lại (Commit)** cả hai file `buildozer.spec` và `.github/workflows/build.yml` đã được cập nhật.
+2.  Một quy trình Actions mới sẽ được khởi chạy.
+
+Lần này, chúng ta đang đi theo một con đường hoàn toàn khác:
+*   Sử dụng các phiên bản thư viện đã được kiểm chứng.
+*   Sử dụng một phiên bản `python-for-android` mạnh mẽ và đã được sửa lỗi hơn.
+
+Tôi thực sự tin rằng việc thay đổi chiến lược này sẽ phá vỡ vòng lặp lỗi và đưa chúng ta đến thành công.
