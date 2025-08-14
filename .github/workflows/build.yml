@@ -21,12 +21,12 @@ jobs:
           pip install buildozer cython==0.29.34
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          # [SỬA LỖI] Thay thế libncurses5 bằng libncurses6
           sudo apt-get install -y libc6:i386 libncurses6:i386 libstdc++6:i386 libz1:i386 libssl-dev libjpeg-dev zlib1g-dev
 
       - name: Build with Buildozer
         run: |
-          buildozer --log-level 2 -v android debug
+          # [SỬA LỖI] Xóa cờ "-v" bị dư thừa
+          buildozer --log-level 2 android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
