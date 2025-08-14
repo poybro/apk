@@ -45,7 +45,7 @@ version = 1.0
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
 # [CHỈNH SỬA] Liệt kê TẤT CẢ các thư viện Python mà dự án cần
-requirements = python3,kivy==2.3.1,requests,cryptography,colorama
+requirements = python3,kivy==2.3.1
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
