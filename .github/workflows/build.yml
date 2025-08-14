@@ -23,9 +23,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libc6:i386 libncurses6:i386 libstdc++6:i386 zlib1g:i386 libssl-dev libjpeg-dev
 
+      # [SỬA LỖI] THÊM BƯỚC MỚI ĐỂ TỰ ĐỘNG CHẤP NHẬN BẢN QUYỀN SDK
+      - name: Accept SDK Licenses
+        run: |
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || yes | $ANDROID_SDK_ROOT/tools/bin/sdkmanager --licenses
+
       - name: Build with Buildozer
         run: |
-          # [SỬA LỖI] Di chuyển target "android debug" lên trước các tùy chọn
           buildozer android debug --log-level 2
 
       - name: Upload APK
