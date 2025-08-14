@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   build-android:
-    # [SỬA LỖI QUAN TRỌNG NHẤT] Sử dụng một phiên bản Ubuntu ổn định và đã được kiểm chứng
+    # [GIẢI PHÁP 1] Sử dụng Ubuntu 22.04 ổn định
     runs-on: ubuntu-22.04
 
     steps:
@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install system dependencies
+      - name: Install system dependencies including build tools
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
@@ -39,13 +39,28 @@ jobs:
             libstdc++6:i386 \
             zlib1g:i386
 
-      - name: Install Buildozer
+      - name: Install Buildozer and Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install buildozer cython==0.29.34
 
+      # [GIẢI PHÁP 2] Tự tay quản lý Android SDK để giải quyết lỗi giấy phép
+      - name: Download Android SDK, accept licenses
+        run: |
+          export ANDROID_HOME=$HOME/android-sdk
+          mkdir -p $ANDROID_HOME/cmdline-tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+          unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools/
+          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+          yes | sdkmanager --licenses
+          sdkmanager --sdk_root=${ANDROID_HOME} "platforms;android-31" "build-tools;34.0.0" "platform-tools"
+          
       - name: Build with Buildozer
         run: |
+          # Thêm các biến môi trường để Buildozer sử dụng SDK chúng ta vừa cài
+          export ANDROID_HOME=$HOME/android-sdk
+          export ANDROID_SDK_ROOT=$HOME/android-sdk
           buildozer android debug --log-level 2
 
       - name: Upload APK
