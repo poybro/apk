@@ -4,6 +4,8 @@
 # [CHỈNH SỬA] Đặt tên cho ứng dụng của bạn
 title = SOK Ultimate Wallet
 
+android.sdk_path = /home/runner/android-sdk
+
 # (str) Package name
 # [CHỈNH SỬA] Tên gói, viết thường, không dấu cách
 package.name = sokwallet
