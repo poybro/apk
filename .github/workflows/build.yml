@@ -2,15 +2,6 @@
         run: |
           # [SỬA LỖI] Đặt target "android debug" ngay sau lệnh buildozer
           buildozer android debug --log-level 2
-```*Lưu ý: Chúng ta có thể quay lại dùng `--log-level 2` vì giờ đây nó đã nằm ở vị trí tùy chọn (sau target) nên sẽ không bị hiểu nhầm nữa.*
-
----
-
-### File `build.yml` đầy đủ (phiên bản cuối cùng)
-
-Để đảm bảo không còn sai sót nào, bạn hãy **thay thế toàn bộ nội dung file `.github/workflows/build.yml`** bằng phiên bản đã được cập nhật dưới đây.
-
-```yaml
 name: Build Kivy APK with Buildozer
 
 on: [push]
