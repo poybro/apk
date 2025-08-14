@@ -1,106 +1,80 @@
 [app]
 
-# (str) Title of your application
-# [CHỈNH SỬA] Đặt tên cho ứng dụng của bạn
-title = SOK Ultimate Wallet
+# (str) Tên ứng dụng của bạn
+title = Sok Wallet
 
-android.sdk_path = /home/runner/android-sdk
-
-# (str) Package name
-# [CHỈNH SỬA] Tên gói, viết thường, không dấu cách
+# (str) Tên gói, không dấu, không khoảng trắng, không gạch ngang
 package.name = sokwallet
 
-# (str) Package domain (needed for android/ios packaging)
-# [CHỈNH SỬA] Tên miền đảo ngược, để phân biệt ứng dụng
-package.domain = org.sokchain
+# (str) Tên miền của gói, dùng để định danh duy nhất
+package.domain = org.sokchain.wallet
 
-# (str) Source code where the main.py live
-# [CHỈNH SỬA] Đổi tên file main cho đúng với dự án của chúng ta
+# (str) Thư mục chứa mã nguồn (main.py)
 source.dir = .
-main.py = kivy_app_final_ui.py
 
-# (list) Source files to include (let empty to include all the files)
-# [CHỈNH SỬA] Thêm .kv để Kivy có thể đọc, và .pem cho các file ví
-source.include_exts = py,png,jpg,kv,atlas,pem,enc,json
+# (list) Các loại file cần được đóng gói vào APK
+source.include_exts = py,png,jpg,kv,atlas,json,ttf
 
-# (list) List of inclusions using pattern matching
-#source.include_patterns = assets/*,images/*.png
+# (str) Phiên bản của ứng dụng
+version = 1.0.0
 
-# (list) Source files to exclude (let empty to not exclude anything)
-#source.exclude_exts = spec
-
-# (list) List of directory to exclude (let empty to not exclude anything)
-# [CHỈNH SỬA] Loại trừ các thư mục không cần thiết để file .apk nhẹ hơn
-source.exclude_dirs = tests, bin, venv, .buildozer, __pycache__
-
-# (list) List of exclusions using pattern matching
-# Do not prefix with './'
-#source.exclude_patterns = license,images/*/*.jpg
-
-# (str) Application versioning (method 1)
-version = 1.0
-
-# (str) Application versioning (method 2)
-# version.regex = __version__ = ['"](.*)['"]
-# version.filename = %(source.dir)s/main.py
-
-# (list) Application requirements
-# comma separated e.g. requirements = sqlite3,kivy
-# [CHỈNH SỬA] Liệt kê TẤT CẢ các thư viện Python mà dự án cần
+# (list) [QUAN TRỌNG NHẤT] Danh sách các thư viện Python cần thiết.
+# Các phiên bản này đã được ghim để đảm bảo quá trình build ổn định.
 requirements = python3,kivy==2.3.1,requests,cffi==1.15.1,pycparser==2.21,idna==3.4,charset-normalizer==2.1.1,urllib3==1.26.12,certifi==2022.9.24,openssl==1.1.1q,cryptography==38.0.3,colorama,qrcode[pil]
 
-# (str) Custom source folders for requirements
-# Sets custom source for any requirements with recipes
-# requirements.source.kivy = ../../kivy
-
-# (str) Presplash of the application
-#presplash.filename = %(source.dir)s/data/presplash.png
-
-# (str) Icon of the application
-#icon.filename = %(source.dir)s/data/icon.png
-
-# (list) Supported orientations
-# Valid options are: landscape, portrait, portrait-reverse or landscape-reverse
+# (str) Hướng màn hình. 'portrait' (dọc) là phù hợp cho ví.
 orientation = portrait
 
-# (list) List of service to declare
-#services = NAME:ENTRYPOINT_TO_PY,NAME2:ENTRYPOINT2_TO_PY
-
-p4a.branch = develop
-
-#
-# Android specific
-#
-
-# (bool) Indicate if the application should be fullscreen or not
+# (bool) Cho phép ứng dụng truy cập Internet (bắt buộc cho `requests`)
 fullscreen = 0
 
-# (list) Permissions
-# [CHỈNH SỬA] Yêu cầu quyền truy cập Internet
-android.permissions = INTERNET
+# (str) Đường dẫn đến icon của ứng dụng. Cần có file icon.png trong thư mục dự án.
+icon.filename = %(source.dir)s/icon.png
 
-# (int) Target Android API, should be as high as possible.
-android.api = 31
+# (str) Đường dẫn đến màn hình chờ. Cần có file presplash.png.
+presplash.filename = %(source.dir)s/presplash.png
 
-# (int) Minimum API your APK / AAB will support.
-android.minapi = 21
+# (str) [QUAN TRỌNG] Sử dụng nhánh 'develop' của python-for-android để có các công thức build đã được sửa lỗi.
+p4a.branch = develop
 
-# (str) Android NDK version to use
-# [CHỈNH SỬA] Ghim phiên bản NDK để đảm bảo ổn định
-android.ndk_version = 23c
 
-# (list) The Android archs to build for, choices: armeabi-v7a, arm64-v8a, x86, x86_64
-# [CHỈNH SỬA] Biên dịch cho cả hai kiến trúc ARM phổ biến
+[android]
+
+# (list) Các kiến trúc CPU cần build. Tối ưu cho hầu hết điện thoại.
 android.archs = arm64-v8a, armeabi-v7a
 
-# (bool) enables Android auto backup feature (Android API >=23)
-android.allow_backup = True
+# (int) API level tối thiểu để chạy ứng dụng
+android.minapi = 21
+
+# (int) API level mục tiêu
+android.api = 31
+
+# (list) Các quyền mà ứng dụng cần. INTERNET là bắt buộc.
+android.permissions = INTERNET
+
+# (str) The Android NDK version to use
+# [QUAN TRỌNG] Bỏ trống hoặc comment lại dòng này. 
+# Chúng ta để cho p4a tự chọn phiên bản NDK tương thích.
+# android.ndk_version = 23c
+
+# (str) The Android build tools version to use
+# [QUAN TRỌNG] Comment dòng này lại. 
+# Chúng ta đã cài đặt build-tools thủ công trong file build.yml.
+# android.build_tools_version = 34.0.0
+
+# (str) Path to the Android SDK.
+# [QUAN TRỌNG] Comment dòng này lại.
+# Môi trường GitHub Actions sẽ tự thiết lập biến môi trường ANDROID_HOME.
+# android.sdk_path = /home/runner/android-sdk
+
+# (bool) If True, then skip the clean step. Automatically set to True when rebuilding with the same requirements.
+# android.skip_update = False
 
 
 [buildozer]
 
-# (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
+# (int) Log level (0 = error, 1 = info, 2 = debug (rất chi tiết))
 log_level = 2
 
-# (int) Display warning if buildozer is run as root (0 = False, 1 = True)
-warn_on_root = 1
+# (int) Số lần Buildozer sẽ thử lại nếu một lần tải về thất bại
+download_attempts = 3
