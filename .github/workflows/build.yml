@@ -21,16 +21,33 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install system dependencies
+      - name: Install system dependencies including build tools
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y libc6:i386 libncurses6:i386 libstdc++6:i386 zlib1g:i386 libssl-dev libjpeg-dev
+          # [SỬA LỖI QUAN TRỌNG] Thêm autoconf, automake, và libtool
+          sudo apt-get install -y \
+            git \
+            zip \
+            unzip \
+            build-essential \
+            autoconf \
+            automake \
+            libtool \
+            pkg-config \
+            libc6:i386 \
+            libncurses6:i386 \
+            libstdc++6:i386 \
+            zlib1g:i386 \
+            libssl-dev \
+            libjpeg-dev
 
       - name: Install Buildozer and Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install buildozer cython==0.29.34
+
+      # Các bước Download Android SDK và Buildozer giữ nguyên từ phiên bản trước
 
       - name: Download Android SDK, accept licenses, and create compatibility symlinks
         run: |
@@ -43,13 +60,9 @@ jobs:
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
           yes | sdkmanager --licenses
           sdkmanager --sdk_root=${ANDROID_HOME} "platforms;android-31" "build-tools;34.0.0" "platform-tools"
-
-          # [SỬA LỖI QUAN TRỌNG] TẠO CẤU TRÚC THƯ MỤC CŨ ĐỂ "ĐÁNH LỪA" BUILDOZER
-          # Tạo thư mục tools/bin mà Buildozer đang tìm kiếm
+          
           mkdir -p $ANDROID_HOME/tools/bin
-          # Tạo một liên kết tượng trưng (symlink) từ sdkmanager thật đến vị trí ảo
           ln -s $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager $ANDROID_HOME/tools/bin/sdkmanager
-          # Làm tương tự cho avdmanager để tránh lỗi tiềm ẩn
           ln -s $ANDROID_HOME/cmdline-tools/latest/bin/avdmanager $ANDROID_HOME/tools/bin/avdmanager
 
       - name: Build with Buildozer
