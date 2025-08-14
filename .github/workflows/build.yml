@@ -21,12 +21,10 @@ jobs:
           pip install buildozer cython==0.29.34
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          # [SỬA LỖI] Cài đặt các thư viện hệ thống cần thiết cho cryptography và pillow
           sudo apt-get install -y libc6:i386 libncurses5:i386 libstdc++6:i386 libz1:i386 libssl-dev libjpeg-dev zlib1g-dev
 
       - name: Build with Buildozer
         run: |
-          # Thêm cờ --log-level 2 để có log chi tiết hơn khi cần
           buildozer --log-level 2 -v android debug
 
       - name: Upload APK
