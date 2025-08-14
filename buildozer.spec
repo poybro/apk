@@ -47,7 +47,7 @@ version = 1.0
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
 # [CHỈNH SỬA] Liệt kê TẤT CẢ các thư viện Python mà dự án cần
-requirements = python3,kivy==2.3.1
+requirements = python3,kivy==2.3.1,requests,cffi==1.15.1,pycparser==2.21,idna==3.4,charset-normalizer==2.1.1,urllib3==1.26.12,certifi==2022.9.24,openssl==1.1.1q,cryptography==38.0.3,colorama,qrcode[pil]
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -66,6 +66,7 @@ orientation = portrait
 # (list) List of service to declare
 #services = NAME:ENTRYPOINT_TO_PY,NAME2:ENTRYPOINT2_TO_PY
 
+p4a.branch = develop
 
 #
 # Android specific
