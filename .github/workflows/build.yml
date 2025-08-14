@@ -1,3 +1,16 @@
+      - name: Build with Buildozer
+        run: |
+          # [SỬA LỖI] Đặt target "android debug" ngay sau lệnh buildozer
+          buildozer android debug --log-level 2
+```*Lưu ý: Chúng ta có thể quay lại dùng `--log-level 2` vì giờ đây nó đã nằm ở vị trí tùy chọn (sau target) nên sẽ không bị hiểu nhầm nữa.*
+
+---
+
+### File `build.yml` đầy đủ (phiên bản cuối cùng)
+
+Để đảm bảo không còn sai sót nào, bạn hãy **thay thế toàn bộ nội dung file `.github/workflows/build.yml`** bằng phiên bản đã được cập nhật dưới đây.
+
+```yaml
 name: Build Kivy APK with Buildozer
 
 on: [push]
@@ -19,15 +32,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install buildozer cython==0.29.34
-          # [SỬA LỖI] Sửa "i3D" thành "i386"
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          # [SỬA LỖI] Sửa "libz1:i386" thành "zlib1g:i386" và đảm bảo không lặp lại zlib1g-dev
           sudo apt-get install -y libc6:i386 libncurses6:i386 libstdc++6:i386 zlib1g:i386 libssl-dev libjpeg-dev
 
       - name: Build with Buildozer
         run: |
-          buildozer --log-level debug android debug
+          # [SỬA LỖI] Di chuyển target "android debug" lên trước các tùy chọn
+          buildozer android debug --log-level 2
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
