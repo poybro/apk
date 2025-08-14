@@ -32,21 +32,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install buildozer cython==0.29.34
 
-      - name: Download Android SDK and accept licenses
+      - name: Download Android SDK, accept licenses, and create compatibility symlinks
         run: |
-          # Dùng ANDROID_HOME để tương thích tốt hơn
           export ANDROID_HOME=$HOME/android-sdk
           mkdir -p $ANDROID_HOME/cmdline-tools
           wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
           unzip cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools/
           mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+          
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
           yes | sdkmanager --licenses
-          # Cài đặt các công cụ cần thiết vào chính thư mục này
           sdkmanager --sdk_root=${ANDROID_HOME} "platforms;android-31" "build-tools;34.0.0" "platform-tools"
 
-      # [SỬA LỖI] Bước symlink đã được xóa vì không cần thiết nữa.
-      # Buildozer sẽ đọc đường dẫn từ buildozer.spec.
+          # [SỬA LỖI QUAN TRỌNG] TẠO CẤU TRÚC THƯ MỤC CŨ ĐỂ "ĐÁNH LỪA" BUILDOZER
+          # Tạo thư mục tools/bin mà Buildozer đang tìm kiếm
+          mkdir -p $ANDROID_HOME/tools/bin
+          # Tạo một liên kết tượng trưng (symlink) từ sdkmanager thật đến vị trí ảo
+          ln -s $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager $ANDROID_HOME/tools/bin/sdkmanager
+          # Làm tương tự cho avdmanager để tránh lỗi tiềm ẩn
+          ln -s $ANDROID_HOME/cmdline-tools/latest/bin/avdmanager $ANDROID_HOME/tools/bin/avdmanager
 
       - name: Build with Buildozer
         run: |
