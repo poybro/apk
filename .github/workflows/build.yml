@@ -19,13 +19,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install buildozer cython==0.29.34
-          sudo dpkg --add-architecture i3D
+          # [SỬA LỖI] Sửa "i3D" thành "i386"
+          sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y libc6:i386 libncurses6:i386 libstdc++6:i386 libz1:i386 libssl-dev libjpeg-dev zlib1g-dev
+          # [SỬA LỖI] Sửa "libz1:i386" thành "zlib1g:i386" và đảm bảo không lặp lại zlib1g-dev
+          sudo apt-get install -y libc6:i386 libncurses6:i386 libstdc++6:i386 zlib1g:i386 libssl-dev libjpeg-dev
 
       - name: Build with Buildozer
         run: |
-          # [SỬA LỖI] Sử dụng tên log level "debug" thay vì số "2"
           buildozer --log-level debug android debug
 
       - name: Upload APK
