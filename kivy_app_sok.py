@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# kivy_app_sok.py (UI - Phiên bản cuối với hiệu ứng Aurora và Logo)
+# kivy_app_sok.py (UI - Hoàn chỉnh với Backup/Restore)
 
 import os, threading, io, qrcode, json, random
 from datetime import datetime
@@ -32,12 +32,9 @@ TEXT_COLOR_LIGHT = (1, 1, 1, 0.95)
 TEXT_COLOR_DARK = (0.1, 0.1, 0.2, 1)
 CARD_BACKGROUND_COLOR = (0.1, 0.05, 0.15, 0.65)
 
-# [MỚI] Bảng màu cho hiệu ứng Aurora
 AURORA_COLORS = [
-    get_color_from_hex("#8A2BE2"), # BlueViolet
-    get_color_from_hex("#4B0082"), # Indigo
-    get_color_from_hex("#00008B"), # DarkBlue
-    get_color_from_hex("#483D8B")  # DarkSlateBlue
+    get_color_from_hex("#8A2BE2"), get_color_from_hex("#4B0082"),
+    get_color_from_hex("#00008B"), get_color_from_hex("#483D8B")
 ]
 
 ASSETS_DIR = 'assets'
@@ -47,52 +44,24 @@ FONT_ICON = os.path.join(ASSETS_DIR, 'DejaVuSans.ttf')
 LOGO_FILE = os.path.join(ASSETS_DIR, 'logo.png')
 ICON_FILE = os.path.join(ASSETS_DIR, 'icon.png')
 
-# --- [MỚI] Nền Aurora Động ---
+# --- Các lớp Widget và AuroraBackground giữ nguyên ---
 class AuroraBackground(Widget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.blobs = []
         with self.canvas.before:
-            Color(0.06, 0.02, 0.1, 1) # Màu nền gốc
-            self.bg_rect = Rectangle(size=self.size, pos=self.pos)
-            
-            # Tạo các "đốm màu" cực quang
+            Color(0.06, 0.02, 0.1, 1); self.bg_rect = Rectangle(size=self.size, pos=self.pos)
             for i in range(4):
-                color = random.choice(AURORA_COLORS)
-                # Giảm độ trong suốt để chúng hòa vào nhau
-                color[3] = random.uniform(0.1, 0.35)
-                
-                blob_color = Color(rgba=color)
-                blob_ellipse = Ellipse(
-                    pos=(random.uniform(-0.5, 0.5) * self.width, random.uniform(-0.5, 0.5) * self.height),
-                    size=(random.uniform(0.8, 1.5) * self.width, random.uniform(0.8, 1.5) * self.height)
-                )
-                self.blobs.append({'color': blob_color, 'shape': blob_ellipse})
-
+                color = random.choice(AURORA_COLORS); color[3] = random.uniform(0.1, 0.35)
+                self.blobs.append({'color': Color(rgba=color), 'shape': Ellipse(pos=(random.uniform(-0.5, 0.5) * self.width, random.uniform(-0.5, 0.5) * self.height),size=(random.uniform(0.8, 1.5) * self.width, random.uniform(0.8, 1.5) * self.height))})
         self.bind(size=self._update_rect, pos=self._update_rect)
         Clock.schedule_once(self.animate_blobs)
-
-    def _update_rect(self, instance, value):
-        self.bg_rect.pos = instance.pos
-        self.bg_rect.size = instance.size
-    
+    def _update_rect(self, i, v): self.bg_rect.pos=i.pos; self.bg_rect.size=i.size
     def animate_blobs(self, *args):
         for blob in self.blobs:
-            # Tạo animation lặp vô tận
-            anim = Animation(
-                pos=(random.uniform(-0.5, 0.5) * self.width, random.uniform(-0.5, 0.5) * self.height),
-                size=(random.uniform(0.8, 1.5) * self.width, random.uniform(0.8, 1.5) * self.height),
-                duration=random.uniform(15, 25) # Chuyển động chậm
-            )
-            anim += Animation(
-                pos=(random.uniform(-0.5, 0.5) * self.width, random.uniform(-0.5, 0.5) * self.height),
-                size=(random.uniform(0.8, 1.5) * self.width, random.uniform(0.8, 1.5) * self.height),
-                duration=random.uniform(15, 25)
-            )
-            anim.repeat = True
-            anim.start(blob['shape'])
+            anim = (Animation(pos=(random.uniform(-0.5, 0.5) * self.width, random.uniform(-0.5, 0.5) * self.height), size=(random.uniform(0.8, 1.5) * self.width, random.uniform(0.8, 1.5) * self.height), duration=random.uniform(15, 25)) + Animation(pos=(random.uniform(-0.5, 0.5) * self.width, random.uniform(-0.5, 0.5) * self.height), size=(random.uniform(0.8, 1.5) * self.width, random.uniform(0.8, 1.5) * self.height), duration=random.uniform(15, 25)))
+            anim.repeat = True; anim.start(blob['shape'])
 
-# --- Các lớp Widget và Màn hình (giữ nguyên, không cần sửa) ---
 class Card(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -124,14 +93,65 @@ class BaseScreen(Screen):
         self.app = App.get_running_app()
         self.backend = self.app.backend
 
-# --- Các màn hình chức năng ---
+# --- Màn hình Dashboard (Thêm nút "Sao lưu Private Key") ---
 class DashboardScreen(BaseScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        # Bố cục giao diện
         root_scroll=ScrollView(size_hint=(1,1),bar_width=0);layout=BoxLayout(orientation='vertical',padding=20,spacing=20,size_hint_y=None);layout.bind(minimum_height=layout.setter('height'))
-        acc_card=Card(height=230,size_hint_y=None);acc_card.add_widget(ThemedLabel(text="Tài khoản",font_size='18sp',font_name=FONT_BOLD,color=PRIMARY_ACCENT));self.balance_label=ThemedLabel(text="Số dư: Đang tải...",font_size='22sp',font_name=FONT_BOLD);acc_card.add_widget(self.balance_label);addr_layout=BoxLayout(orientation='horizontal',size_hint_y=None,height=44,spacing=10);self.address_input=ThemedTextInput(text="Đang tải ví...",readonly=True,multiline=False);copy_btn=Button(text="Copy",size_hint_x=None,width=100,font_name=FONT_BOLD);copy_btn.bind(on_press=self.copy_address);addr_layout.add_widget(self.address_input);addr_layout.add_widget(copy_btn);acc_card.add_widget(addr_layout);act_btns_layout=BoxLayout(orientation='horizontal',size_hint_y=None,height=50,spacing=20);send_nav_btn=AppButton(text="Gửi SOK",background_color=get_color_from_hex("#3498db"));send_nav_btn.bind(on_press=lambda x:setattr(self.manager,'current','miner'));recv_btn=AppButton(text="Nhận (QR)",background_color=get_color_from_hex("#2ecc71"));recv_btn.bind(on_press=self.show_qr_popup);act_btns_layout.add_widget(send_nav_btn);act_btns_layout.add_widget(recv_btn);acc_card.add_widget(act_btns_layout)
+        
+        # Thẻ tài khoản
+        acc_card=Card(size_hint_y=None); acc_card.bind(minimum_height=acc_card.setter('height'))
+        acc_card.add_widget(ThemedLabel(text="Tài khoản",font_size='18sp',font_name=FONT_BOLD,color=PRIMARY_ACCENT, size_hint_y=None, height=40))
+        self.balance_label=ThemedLabel(text="Số dư: Đang tải...",font_size='22sp',font_name=FONT_BOLD, size_hint_y=None, height=40)
+        acc_card.add_widget(self.balance_label)
+        addr_layout=BoxLayout(orientation='horizontal',size_hint_y=None,height=44,spacing=10)
+        self.address_input=ThemedTextInput(text="Đang tải ví...",readonly=True,multiline=False)
+        copy_btn=Button(text="Copy",size_hint_x=None,width=100,font_name=FONT_BOLD);copy_btn.bind(on_press=self.copy_address)
+        addr_layout.add_widget(self.address_input);addr_layout.add_widget(copy_btn);acc_card.add_widget(addr_layout)
+        act_btns_layout=BoxLayout(orientation='horizontal',size_hint_y=None,height=50,spacing=20)
+        send_nav_btn=AppButton(text="Gửi SOK",background_color=get_color_from_hex("#3498db"));send_nav_btn.bind(on_press=lambda x:setattr(self.manager,'current','miner'))
+        recv_btn=AppButton(text="Nhận (QR)",background_color=get_color_from_hex("#2ecc71"));recv_btn.bind(on_press=self.show_qr_popup)
+        act_btns_layout.add_widget(send_nav_btn);act_btns_layout.add_widget(recv_btn);acc_card.add_widget(act_btns_layout)
+        
+        # [MỚI] Nút sao lưu key
+        backup_btn = AppButton(text="Sao lưu Private Key", background_color=get_color_from_hex("#f39c12")); backup_btn.bind(on_press=self.show_password_prompt_for_backup)
+        acc_card.add_widget(backup_btn)
+
+        # Thẻ mạng
         net_card=Card(height=120,size_hint_y=None);net_card.add_widget(ThemedLabel(text="Trạng thái Mạng",font_size='18sp',font_name=FONT_BOLD,color=PRIMARY_ACCENT));self.height_label=ThemedLabel(text="Khối: ...",font_size='16sp');self.status_label=ThemedLabel(text="Mạng: ...",font_size='16sp');net_card.add_widget(self.height_label);net_card.add_widget(self.status_label)
         self.refresh_button=AppButton(text="Làm mới Bảng tin");self.refresh_button.bind(on_press=self.refresh_data);layout.add_widget(acc_card);layout.add_widget(net_card);layout.add_widget(self.refresh_button);root_scroll.add_widget(layout);self.add_widget(root_scroll)
+
+    # [MỚI] Hàm hiển thị popup yêu cầu mật khẩu trước khi sao lưu
+    def show_password_prompt_for_backup(self, instance):
+        content=BoxLayout(orientation='vertical',padding=20,spacing=10);popup=ModalView(size_hint=(0.8,None),height=280,background_color=(1,1,1,0.95))
+        content.add_widget(Label(text="Xác thực để Sao lưu",font_size='20sp',color=TEXT_COLOR_DARK,font_name=FONT_BOLD))
+        content.add_widget(Label(text="Nhập mật khẩu ví của bạn để xem Private Key.",color=TEXT_COLOR_DARK,font_name=FONT_REGULAR))
+        pass_input = TextInput(hint_text="Nhập mật khẩu", password=True, multiline=False, foreground_color=TEXT_COLOR_DARK, background_color=(.9,.9,.9,1))
+        content.add_widget(pass_input)
+        confirm_btn = Button(text="Xác nhận", size_hint_y=None, height=50, font_name=FONT_BOLD)
+        content.add_widget(confirm_btn)
+        
+        def do_confirm(*args):
+            password = pass_input.text
+            # Thử load lại ví với mật khẩu đã nhập để xác thực
+            success, msg = self.backend.load_wallet_from_file(password)
+            popup.dismiss()
+            if success:
+                private_key = self.backend.get_private_key_for_backup()
+                if private_key:
+                    # Gọi lại popup hiển thị key an toàn
+                    self.app.show_backup_popup(private_key, is_creation=False)
+                else:
+                    self.app.show_popup("Lỗi", "Không thể lấy được Private Key.")
+            else:
+                self.app.show_popup("Lỗi", "Mật khẩu không chính xác.")
+
+        confirm_btn.bind(on_press=do_confirm)
+        popup.add_widget(content)
+        popup.open()
+
+    # Các hàm khác của DashboardScreen giữ nguyên
     def on_enter(self,*args):
         if self.backend and self.backend.wallet:self.address_input.text=self.backend.wallet.get_address();self.refresh_data(self.refresh_button)
     def refresh_data(self,instance):instance.disabled=True;instance.text="Đang tải...";threading.Thread(target=self._update_ui_thread,args=(instance,),daemon=True).start()
@@ -151,7 +171,9 @@ class DashboardScreen(BaseScreen):
         if not self.backend.wallet:return
         addr=self.backend.wallet.get_address();content=BoxLayout(orientation='vertical',padding=20,spacing=10);content.add_widget(Label(text="Quét mã này để nhận SOK",font_size='18sp',size_hint_y=None,height=40,color=TEXT_COLOR_DARK,font_name=FONT_BOLD));qr_img=qrcode.make(addr);buffer=io.BytesIO();qr_img.save(buffer,format='PNG');buffer.seek(0);core_img=CoreImage(buffer,ext='png');qr_widget=Image(texture=core_img.texture);content.add_widget(qr_widget);addr_label=TextInput(text=addr,readonly=True,size_hint_y=None,height=80,multiline=True,font_name=FONT_REGULAR,foreground_color=TEXT_COLOR_DARK,background_color=(.9,.9,.9,1));content.add_widget(addr_label);close_btn=Button(text='Đóng',size_hint_y=None,height=50,font_name=FONT_BOLD);content.add_widget(close_btn);popup=ModalView(size_hint=(0.9,0.8),background_color=(1,1,1,0.95));popup.add_widget(content);close_btn.bind(on_press=popup.dismiss);popup.open()
 
+# --- Các màn hình History, Website, Miner, MainScreen giữ nguyên ---
 class HistoryScreen(BaseScreen):
+    #... (Mã giữ nguyên)
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         layout=BoxLayout(orientation='vertical',padding=10,spacing=10);header=BoxLayout(size_hint=(1,None),height=50,spacing=10);header.add_widget(ThemedLabel(text="Lịch sử Giao dịch",font_size='24sp',font_name=FONT_BOLD));self.refresh_button=AppButton(text="Làm mới",size_hint=(None,1),width=120);self.refresh_button.bind(on_press=self.refresh_history);header.add_widget(self.refresh_button);scroll=ScrollView(size_hint=(1,1),bar_width=0);self.history_grid=GridLayout(cols=1,spacing=10,size_hint_y=None);self.history_grid.bind(minimum_height=self.history_grid.setter('height'));scroll.add_widget(self.history_grid);layout.add_widget(header);layout.add_widget(scroll);self.add_widget(layout)
@@ -202,6 +224,7 @@ class HistoryScreen(BaseScreen):
         menu_layout.add_widget(Button(text="Đóng",on_press=popup.dismiss,background_color=get_color_from_hex("#bdc3c7"),font_name=FONT_BOLD));popup.add_widget(menu_layout);popup.open()
 
 class WebsiteScreen(BaseScreen):
+    #... (Mã giữ nguyên)
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         main_layout=BoxLayout(orientation='vertical',padding=20,spacing=20);add_card=Card(height=200,size_hint_y=None);add_card.add_widget(ThemedLabel(text="Quản lý Website",font_size='20sp',font_name=FONT_BOLD,color=PRIMARY_ACCENT));self.url_input=ThemedTextInput(hint_text="Nhập URL website (vd: https://my-site.com)",size_hint_y=None,height=44);self.add_button=AppButton(text="Thêm Website",background_color=get_color_from_hex("#16a085"));self.add_button.bind(on_press=self.add_new_website);add_card.add_widget(self.url_input);add_card.add_widget(self.add_button);list_card=BoxLayout(orientation='vertical',spacing=10);list_header=BoxLayout(size_hint_y=None,height=50);list_header.add_widget(ThemedLabel(text="Các Website của bạn",font_size='20sp',font_name=FONT_BOLD));self.refresh_button=AppButton(text="Làm mới",size_hint_x=None,width=120);self.refresh_button.bind(on_press=lambda x:self.refresh_websites(x));list_header.add_widget(self.refresh_button);scroll=ScrollView(size_hint=(1,1),bar_width=0);self.website_grid=GridLayout(cols=1,spacing=10,size_hint_y=None);self.website_grid.bind(minimum_height=self.website_grid.setter('height'));scroll.add_widget(self.website_grid);list_card.add_widget(list_header);list_card.add_widget(scroll);main_layout.add_widget(add_card);main_layout.add_widget(list_card);self.add_widget(main_layout)
@@ -257,80 +280,58 @@ class WebsiteScreen(BaseScreen):
         Clock.schedule_once(lambda dt:self.app.show_popup(title,msg))
 
 class MinerScreen(BaseScreen):
+    #... (Mã giữ nguyên)
     scale=NumericProperty(1.0)
     ADDRESS_BOOK_FILE='address_book.json'
-
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
         self.address_book_path=os.path.join(self.app.user_data_dir,self.ADDRESS_BOOK_FILE)
         root_scroll=ScrollView(bar_width=0);main_layout=BoxLayout(orientation='vertical',padding=20,spacing=20,size_hint_y=None);main_layout.bind(minimum_height=main_layout.setter('height'))
-        
         miner_card=Card(size_hint_y=None,height=350);
         miner_card.add_widget(ThemedLabel(text="Thợ Mỏ",font_size='24sp',font_name=FONT_BOLD,color=PRIMARY_ACCENT))
-        
-        # [THAY ĐỔI] Hiển thị logo khi đào
         self.icon_container = FloatLayout(size_hint_y=None, height=100)
         self.stopped_icon = ThemedLabel(text="...", font_size='80sp', font_name=FONT_ICON, pos_hint={'center_x': 0.5, 'center_y': 0.5})
         self.mining_logo = Image(source=LOGO_FILE, opacity=0, pos_hint={'center_x': 0.5, 'center_y': 0.5}, size_hint=(None,None), size=(80,80))
-        self.icon_container.add_widget(self.stopped_icon)
-        self.icon_container.add_widget(self.mining_logo)
+        self.icon_container.add_widget(self.stopped_icon); self.icon_container.add_widget(self.mining_logo)
         miner_card.add_widget(self.icon_container)
-        
-        self.state_label=ThemedLabel(text="Trạng thái: STOPPED",font_size='18sp')
-        self.log_label=ThemedLabel(text="Log: ...",font_size='14sp',color=(.7,.7,.7,1),halign='center')
+        self.state_label=ThemedLabel(text="Trạng thái: STOPPED",font_size='18sp'); self.log_label=ThemedLabel(text="Log: ...",font_size='14sp',color=(.7,.7,.7,1),halign='center')
         miner_card.add_widget(self.state_label);miner_card.add_widget(self.log_label)
-        
         miner_btns_layout=BoxLayout(orientation='horizontal',size_hint_y=None,height=50,spacing=10);start_btn=AppButton(text="Bắt đầu",background_color=get_color_from_hex("#27ae60"));stop_btn=AppButton(text="Tạm dừng",background_color=get_color_from_hex("#c0392b"));start_btn.bind(on_press=self.start_mining);stop_btn.bind(on_press=self.stop_mining);miner_btns_layout.add_widget(start_btn);miner_btns_layout.add_widget(stop_btn)
         send_card=Card(size_hint_y=None,height=250);send_card.add_widget(ThemedLabel(text="Gửi SOK",font_size='24sp',font_name=FONT_BOLD,color=PRIMARY_ACCENT));rcpt_layout=BoxLayout(size_hint_y=None,height=44);self.recipient_input=ThemedTextInput(hint_text="Địa chỉ người nhận",multiline=False);addr_book_btn=Button(text="Sổ",size_hint_x=None,width=80,font_name=FONT_BOLD);addr_book_btn.bind(on_press=self.show_address_book);rcpt_layout.add_widget(self.recipient_input);rcpt_layout.add_widget(addr_book_btn);self.amount_input=ThemedTextInput(hint_text="Số lượng SOK",multiline=False,input_filter='float',size_hint_y=None,height=44);send_btn=AppButton(text="Gửi",background_color=get_color_from_hex("#3498db"));send_btn.bind(on_press=self.send_sok);send_card.add_widget(rcpt_layout);send_card.add_widget(self.amount_input);send_card.add_widget(send_btn)
         main_layout.add_widget(miner_card);main_layout.add_widget(miner_btns_layout);main_layout.add_widget(send_card);root_scroll.add_widget(main_layout);self.add_widget(root_scroll)
-
     def start_breathing_effect(self):Animation.cancel_all(self,'scale');anim=Animation(scale=1.15,duration=1.5)+Animation(scale=1.0,duration=1.5);anim.repeat=True;anim.start(self)
     def stop_breathing_effect(self):Animation.cancel_all(self,'scale');Animation(scale=1.0,duration=0.2).start(self)
-    
     def on_scale(self,instance,value):
-        # [THAY ĐỔI] Áp dụng hiệu ứng scale cho logo
         target_widget = self.mining_logo
         if hasattr(target_widget, 'canvas'):
             target_widget.canvas.before.clear();
             with target_widget.canvas.before:PushMatrix();Scale(value,value,1,origin=target_widget.center)
             target_widget.canvas.after.clear();
             with target_widget.canvas.after:PopMatrix()
-
     def on_enter(self,*args):
         if self.backend:
             self.backend.log_callback=self.update_miner_ui
             status=self.backend.get_miner_status()
             self.update_miner_ui(status.get('state','STOPPED'),status.get('last_log','...'))
-
     def start_mining(self,instance):
         if self.backend:success,msg=self.backend.start_miner();self.app.show_popup("Thông báo",msg)
     def stop_mining(self,instance):
         if self.backend:success,msg=self.backend.stop_miner();self.app.show_popup("Thông báo",msg)
-
     def update_miner_ui(self,state,message):Clock.schedule_once(lambda dt:self._update_labels_and_nav(state,message))
-    
     def _update_labels_and_nav(self,state,message):
         self.state_label.text=f"Trạng thái: {state}";self.log_label.text=f"Log: {message}"
         active_states=["MINING","SUCCESS","NODE_SWITCHED","SEARCHING","STARTING"]
         is_active=state in active_states
-        
-        # [THAY ĐỔI] Chuyển đổi giữa icon và logo
         if is_active:
-            self.mining_logo.opacity = 1
-            self.stopped_icon.opacity = 0
-            self.start_breathing_effect()
+            self.mining_logo.opacity = 1; self.stopped_icon.opacity = 0; self.start_breathing_effect()
         else:
-            self.mining_logo.opacity = 0
-            self.stopped_icon.opacity = 1
-            self.stop_breathing_effect()
-            
+            self.mining_logo.opacity = 0; self.stopped_icon.opacity = 1; self.stop_breathing_effect()
         try:
             miner_btn=self.app.miner_nav_button
             active_color,default_color=get_color_from_hex("#27ae60"),PRIMARY_ACCENT
             target_color=active_color if is_active else default_color
             if miner_btn.color != target_color: miner_btn.color = target_color
         except AttributeError:pass
-
     def load_address_book(self):
         if os.path.exists(self.address_book_path):
             try:
@@ -369,6 +370,7 @@ class MinerScreen(BaseScreen):
     def reset_button(self,instance):instance.disabled,instance.text=False,"Gửi"
 
 class MainScreen(Screen):
+    #... (Mã giữ nguyên)
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.app=App.get_running_app();main_layout=BoxLayout(orientation='vertical')
@@ -381,12 +383,25 @@ class MainScreen(Screen):
             if screen_name=='miner':self.app.miner_nav_button=btn
         main_layout.add_widget(header);main_layout.add_widget(self.sm);main_layout.add_widget(nav_layout);self.add_widget(main_layout)
 
+# --- Màn hình Manager (Thêm nút "Nhập ví") ---
 class ManagerScreen(BaseScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.main_container=FloatLayout();self.add_widget(self.main_container)
-        self.create_layout=BoxLayout(orientation='vertical',size_hint=(.9,None),pos_hint={'center_x':.5,'center_y':.5},height=300,spacing=10);card_create=Card();card_create.add_widget(ThemedLabel(text="Chào mừng!",font_size='24sp',font_name=FONT_BOLD));self.new_pass_input=ThemedTextInput(hint_text="Nhập mật khẩu mới",password=True,size_hint_y=None,height=44);self.confirm_pass_input=ThemedTextInput(hint_text="Xác nhận mật khẩu",password=True,size_hint_y=None,height=44);create_btn=AppButton(text="Tạo Ví");create_btn.bind(on_press=self.create_wallet);card_create.add_widget(self.new_pass_input);card_create.add_widget(self.confirm_pass_input);card_create.add_widget(create_btn);self.create_layout.add_widget(card_create)
+        
+        # Bố cục tạo ví
+        self.create_layout=BoxLayout(orientation='vertical',size_hint=(.9,None),pos_hint={'center_x':.5,'center_y':.5},spacing=10); self.create_layout.bind(height=self.create_layout.setter('height'))
+        card_create=Card();card_create.add_widget(ThemedLabel(text="Chào mừng!",font_size='24sp',font_name=FONT_BOLD));self.new_pass_input=ThemedTextInput(hint_text="Nhập mật khẩu mới",password=True,size_hint_y=None,height=44);self.confirm_pass_input=ThemedTextInput(hint_text="Xác nhận mật khẩu",password=True,size_hint_y=None,height=44);create_btn=AppButton(text="Tạo Ví");create_btn.bind(on_press=self.create_wallet);card_create.add_widget(self.new_pass_input);card_create.add_widget(self.confirm_pass_input);card_create.add_widget(create_btn)
+        
+        # [MỚI] Nút Import
+        import_btn = Button(text="Hoặc, Nhập từ Private Key", size_hint_y=None, height=40, background_color=(0,0,0,0), font_name=FONT_REGULAR, underline=True); import_btn.bind(on_press=self.app.show_import_popup)
+        card_create.add_widget(import_btn)
+        self.create_layout.add_widget(card_create)
+        
+        # Bố cục đăng nhập
         self.login_layout=BoxLayout(orientation='vertical',size_hint=(.9,None),pos_hint={'center_x':.5,'center_y':.5},height=220,spacing=10);card_login=Card();card_login.add_widget(ThemedLabel(text="Mở khóa Ví",font_size='24sp',font_name=FONT_BOLD));self.pass_input=ThemedTextInput(hint_text="Nhập mật khẩu",password=True,size_hint_y=None,height=44);login_btn=AppButton(text="Mở khóa");login_btn.bind(on_press=self.login);card_login.add_widget(self.pass_input);card_login.add_widget(login_btn);self.login_layout.add_widget(card_login)
+
+    # Các hàm còn lại của ManagerScreen
     def on_enter(self,*args):
         self.main_container.clear_widgets()
         if self.backend.does_wallet_exist():self.main_container.add_widget(self.login_layout)
@@ -453,9 +468,71 @@ class SokKivyApp(App):
         Clock.schedule_once(_callback)
     def show_popup(self,title,message):
         content=BoxLayout(orientation='vertical',padding=20,spacing=10);content.add_widget(Label(text=title,font_size='18sp',bold=True,color=TEXT_COLOR_DARK,font_name=FONT_BOLD));content.add_widget(Label(text=message,color=TEXT_COLOR_DARK,text_size=(Window.width*0.7,None),font_name=FONT_REGULAR));close_btn=Button(text="Đóng",size_hint_y=None,height=50,font_name=FONT_BOLD);content.add_widget(close_btn);popup=ModalView(size_hint=(0.8,None),size_hint_max_y=0.8,height=300,background_color=(1,1,1,0.95));popup.add_widget(content);close_btn.bind(on_press=popup.dismiss);popup.open()
-    def show_backup_popup(self,private_key):
-        def switch_to_login(*args):self.sm.get_screen('manager').on_enter()
-        content=BoxLayout(orientation='vertical',padding=10,spacing=10);content.add_widget(Label(text="SAO LƯU KEY NÀY CẨN THẬN!",bold=True,size_hint_y=None,height=40,color=TEXT_COLOR_DARK,font_name=FONT_BOLD));scroll=ScrollView(size_hint_y=0.8);scroll.add_widget(TextInput(text=private_key,readonly=True,size_hint_y=None,height=250,font_name=FONT_REGULAR,foreground_color=TEXT_COLOR_DARK,background_color=(.9,.9,.9,1)));content.add_widget(scroll);close_btn=Button(text="Tôi đã sao lưu, đến màn hình đăng nhập",size_hint_y=None,height=50,font_name=FONT_BOLD);content.add_widget(close_btn);popup=ModalView(size_hint=(0.9,0.7),auto_dismiss=False,background_color=(1,1,1,0.95));popup.add_widget(content);close_btn.bind(on_press=popup.dismiss);popup.bind(on_dismiss=switch_to_login);popup.open()
+    
+    # [THAY ĐỔI] Thêm tham số `is_creation` để tùy chỉnh nút bấm
+    def show_backup_popup(self, private_key, is_creation=True):
+        def on_dismiss(*args):
+            if is_creation:
+                # Sau khi tạo mới, quay lại màn hình manager để đăng nhập
+                self.sm.get_screen('manager').on_enter()
+        
+        content=BoxLayout(orientation='vertical',padding=10,spacing=10);
+        content.add_widget(Label(text="SAO LƯU KEY NÀY CẨN THẬN!",bold=True,size_hint_y=None,height=40,color=TEXT_COLOR_DARK,font_name=FONT_BOLD))
+        scroll=ScrollView(size_hint_y=0.8);
+        scroll.add_widget(TextInput(text=private_key,readonly=True,size_hint_y=None,height=250,font_name=FONT_REGULAR,foreground_color=TEXT_COLOR_DARK,background_color=(.9,.9,.9,1)))
+        content.add_widget(scroll)
+
+        button_text = "Tôi đã sao lưu, đến màn hình đăng nhập" if is_creation else "Tôi đã sao lưu, đóng"
+        close_btn = Button(text=button_text, size_hint_y=None, height=50, font_name=FONT_BOLD)
+        content.add_widget(close_btn)
+
+        popup=ModalView(size_hint=(0.9,0.7),auto_dismiss=False,background_color=(1,1,1,0.95));popup.add_widget(content)
+        close_btn.bind(on_press=popup.dismiss)
+        if is_creation:
+            popup.bind(on_dismiss=on_dismiss)
+        popup.open()
+    
+    # [MỚI] Popup để nhập ví
+    def show_import_popup(self, instance):
+        content=BoxLayout(orientation='vertical',padding=20,spacing=10);popup=ModalView(size_hint=(0.9,0.9),background_color=(1,1,1,0.95))
+        content.add_widget(Label(text="Nhập từ Private Key",font_size='20sp',color=TEXT_COLOR_DARK,font_name=FONT_BOLD))
+        key_input = TextInput(hint_text="Dán Private Key PEM của bạn vào đây", size_hint_y=0.5, font_name=FONT_REGULAR, foreground_color=TEXT_COLOR_DARK, background_color=(.9,.9,.9,1))
+        pass_input = TextInput(hint_text="Tạo mật khẩu MỚI cho thiết bị này", password=True, multiline=False, foreground_color=TEXT_COLOR_DARK, background_color=(.9,.9,.9,1))
+        confirm_pass_input = TextInput(hint_text="Xác nhận mật khẩu MỚI", password=True, multiline=False, foreground_color=TEXT_COLOR_DARK, background_color=(.9,.9,.9,1))
+        import_btn = Button(text="Nhập Ví", size_hint_y=None, height=50, font_name=FONT_BOLD)
+        
+        content.add_widget(key_input); content.add_widget(pass_input); content.add_widget(confirm_pass_input); content.add_widget(import_btn)
+        
+        def do_import(*args):
+            pem = key_input.text.strip()
+            pwd = pass_input.text
+            confirm_pwd = confirm_pass_input.text
+            if not pem or not pwd or not confirm_pwd:
+                self.show_popup("Lỗi", "Vui lòng điền đầy đủ thông tin.")
+                return
+            if pwd != confirm_pwd:
+                self.show_popup("Lỗi", "Mật khẩu không khớp.")
+                return
+            
+            import_btn.disabled = True; import_btn.text = "Đang nhập..."
+            threading.Thread(target=self._import_thread, args=(pem, pwd, popup, import_btn), daemon=True).start()
+
+        import_btn.bind(on_press=do_import)
+        popup.add_widget(content)
+        popup.open()
+        
+    def _import_thread(self, pem, pwd, popup, btn):
+        success, msg = self.backend.import_wallet_from_pem(pem, pwd)
+        def _callback(dt):
+            if success:
+                popup.dismiss()
+                self.show_popup("Thành Công", "Ví của bạn đã được nhập và bảo vệ.\nHãy đăng nhập bằng mật khẩu mới.")
+                self.sm.get_screen('manager').on_enter() # Refresh để hiện màn hình login
+            else:
+                self.show_popup("Lỗi Nhập Ví", msg)
+                btn.disabled = False; btn.text = "Nhập Ví"
+        Clock.schedule_once(_callback)
+
     def on_stop(self):
         if hasattr(self,'backend'):self.backend.shutdown()
 
